@@ -65,7 +65,7 @@ class TileGroup:
                 if numbers[i + 1] == numbers[i]:
                     return False
                 gaps += numbers[i+1] - numbers[i] - 1
-            print(numbers[-1], numbers[0], len(self.tiles))
+
             if gaps <= jokers and numbers[-1] - numbers[0] == len(self.tiles) - 1:
                 return True
             

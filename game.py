@@ -18,8 +18,8 @@ class RummikubGame:
         self.num_turns = 0
     
     def initialize_game(self):
-        self.all_tiles.append(Tile(1, TileType.JOKER))
-        self.all_tiles.append(Tile(2, TileType.JOKER))
+        self.all_tiles.append(Tile(TileType.JOKER, 1))
+        self.all_tiles.append(Tile(TileType.JOKER, 2))
 
         for color in [TileType.BLACK, TileType.BLUE, TileType.ORANGE, TileType.RED]:
             for number in range(1, 14):

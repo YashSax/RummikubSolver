@@ -1,6 +1,10 @@
 # Run with `pytest tests.py`
 from utils import TileGroup, Tile, TileType
 from player import Player
+from game import RummikubGame
+from collections import defaultdict
+import random
+random.seed(42)
 
 class TestTileGroup:
     def test_too_short_group(self):
@@ -204,5 +208,21 @@ class TestPlayerFindGroups:
         assert len(tile_group_map[Tile(TileType.BLUE, 1, 2)]) == 1
         assert len(tile_group_map[Tile(TileType.BLUE, 1, 3)]) == 1
         assert len(tile_group_map[Tile(TileType.RED, 1, 1)]) == 1
-        assert len(tile_group_map[Tile(TileType.BLACK, 1, 1)]) == 1        
+        assert len(tile_group_map[Tile(TileType.BLACK, 1, 1)]) == 1      
+
+    def test_valid_tilegroups(self):
+        """ Find all possible combinations of tiles (213,536) and check them."""
+        game = RummikubGame(num_players=1)
+        tiles = game.all_tiles
+
+        player = Player(0, [])
+        tile_group_map = player.find_groups(tiles)
+
+        tile_groups = defaultdict(list)
+        for tile, groups in tile_group_map.items():
+            for group in groups:
+                tile_groups[group].append(tile)
         
+        print(len(tile_groups))
+        for tile_list in tile_groups.values():
+            assert TileGroup(tile_list).is_valid(), " ".join([str(tile) for tile in tile_list])

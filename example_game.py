@@ -14,17 +14,33 @@ from utils import *
 #         if player.is_game_over():
 #             print(f"Player {player.player_id} has won!")
 
-player = Player(0, [])
+# player = Player(0, [])
         
-tiles = [
-    Tile(TileType.ORANGE, 1, 2),
-    Tile(TileType.BLUE, 1, 4),
-    Tile(TileType.ORANGE, 1, 5),
-    Tile(TileType.JOKER,  1, -1)
-]
+# tiles = [
+#     Tile(TileType.ORANGE, 1, 2),
+#     Tile(TileType.BLUE, 1, 4),
+#     Tile(TileType.ORANGE, 1, 5),
+#     Tile(TileType.JOKER,  1, -1)
+# ]
 
+# tile_group_map = player.find_groups(tiles)
+
+# for tile, groups in tile_group_map.items():
+#     print(tile, end=" ")
+#     print(groups)
+
+from collections import defaultdict
+game = RummikubGame(num_players=1)
+tiles = game.all_tiles
+
+player = Player(0, [])
 tile_group_map = player.find_groups(tiles)
 
+tile_groups = defaultdict(list)
 for tile, groups in tile_group_map.items():
-    print(tile, end=" ")
-    print(groups)
+    for group in groups:
+        tile_groups[group].append(tile)
+
+print(len(tile_groups))
+for tile_list in tile_groups.values():
+    assert TileGroup(tile_list).is_valid(), " ".join([str(tile) for tile in tile_list])

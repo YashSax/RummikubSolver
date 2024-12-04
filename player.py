@@ -15,6 +15,10 @@ class Player:
     def generate_move(self, board_info: Tuple[int, List[TileGroup]]) -> List[TileGroup]:
         round_num, curr_board = board_info
         return curr_board
+    
+    def search_groups(self, tile: List[Tile]) -> List[List[TileGroup]]:
+        """ Given a list of tiles, return a list of possibilities of groups """
+        pass
 
     def find_groups(self, tiles: List[Tile]) -> Dict[Tile, Set[int]]:
         """
@@ -32,8 +36,8 @@ class Player:
             numbers[tile.number].append(tile)
         
         for _, number_tiles in numbers.items():
-            potential_groups.extend(list(combinations(number_tiles + jokers, 3)))
-            potential_groups.extend(list(combinations(number_tiles + jokers, 4)))
+            potential_groups.extend([group for group in combinations(number_tiles + jokers, 3) if len(set(tile.tile_type for tile in group)) == 3])
+            potential_groups.extend([group for group in combinations(number_tiles + jokers, 4) if len(set(tile.tile_type for tile in group)) == 4])
 
         # Search for consecutive numbers, same color.
         colors = defaultdict(list)
@@ -76,12 +80,12 @@ class Player:
                     potential_groups.extend(self.calculate_tile_combinations(all_tiles))
 
                     # Calculate with extra jokers
-                    if len(jokers) - num_missing == 1:
+                    if len(jokers) - num_missing == 1 and seq_len < 13:
                         all_tiles.append([jokers[-1]])
                         potential_groups.extend(self.calculate_tile_combinations(all_tiles))
-                    elif len(jokers) - num_missing == 2:
-                        potential_groups.extend(self.calculate_tile_combinations(all_tiles + jokers))
-                        potential_groups.extend(self.calculate_tile_combinations(all_tiles + [jokers[0]] + [jokers[1]]))
+                    elif len(jokers) - num_missing == 2 and seq_len < 12:
+                        potential_groups.extend(self.calculate_tile_combinations(all_tiles + [jokers]))
+                        potential_groups.extend(self.calculate_tile_combinations(all_tiles + [[jokers[0]]] + [[jokers[1]]]))
         
         tile_group_map = defaultdict(set)
         for group_id, group in enumerate(potential_groups):
