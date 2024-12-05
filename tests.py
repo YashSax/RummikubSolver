@@ -226,3 +226,102 @@ class TestPlayerFindGroups:
         print(len(tile_groups))
         for tile_list in tile_groups.values():
             assert TileGroup(tile_list).is_valid(), " ".join([str(tile) for tile in tile_list])
+
+class TestPlayerFindOptimalGroupList:
+    def test_simple(self):
+        player = Player(0, [])
+        
+        tiles = [
+            Tile(TileType.ORANGE, 1, 1),
+            Tile(TileType.ORANGE, 1, 2),
+            Tile(TileType.ORANGE, 1, 3),
+            Tile(TileType.ORANGE, 1, 4),
+            Tile(TileType.BLUE, 1, 3),
+            Tile(TileType.RED, 1, 3),
+            Tile(TileType.BLUE, 1, 1),
+        ]
+        required_tiles = []
+
+        chosen_tile_groups = player.search_groups(tiles, required_tiles)
+        assert chosen_tile_groups == [TileGroup([
+            Tile(TileType.ORANGE, 1, 1),
+            Tile(TileType.ORANGE, 1, 2),
+            Tile(TileType.ORANGE, 1, 3),
+            Tile(TileType.ORANGE, 1, 4),
+        ])]
+
+    def test_same_number_group(self):
+        player = Player(0, [])
+        
+        tiles = [
+            Tile(TileType.BLUE, 1, 3),
+            Tile(TileType.RED, 1, 3),
+            Tile(TileType.BLACK, 1, 3),
+        ]
+        required_tiles = []
+
+        chosen_tile_groups = player.search_groups(tiles, required_tiles)
+        assert chosen_tile_groups == [TileGroup([
+            Tile(TileType.BLUE, 1, 3),
+            Tile(TileType.RED, 1, 3),
+            Tile(TileType.BLACK, 1, 3),
+        ])]
+
+    def test_with_joker(self):
+        player = Player(0, [])
+        
+        tiles = [
+            Tile(TileType.BLUE, 1, 1),
+            Tile(TileType.BLUE, 1, 2),
+            Tile(TileType.JOKER, 1, -1),
+        ]
+        required_tiles = []
+
+        chosen_tile_groups = player.search_groups(tiles, required_tiles)
+        assert chosen_tile_groups == [TileGroup([
+            Tile(TileType.BLUE, 1, 1),
+            Tile(TileType.BLUE, 1, 2),
+            Tile(TileType.JOKER, 1, -1),
+        ])]
+
+    def test_required_tiles(self):
+        player = Player(0, [])
+        
+        tiles = [
+            Tile(TileType.BLUE, 1, 1),
+            Tile(TileType.BLUE, 1, 2),
+            Tile(TileType.BLUE, 1, 3),
+            Tile(TileType.RED, 1, 1),
+            Tile(TileType.BLACK, 1, 1),
+        ]
+        required_tiles = [Tile(TileType.RED, 1, 1)]
+
+        chosen_tile_groups = player.search_groups(tiles, required_tiles)
+        assert chosen_tile_groups == [TileGroup([
+            Tile(TileType.BLUE, 1, 1),
+            Tile(TileType.RED, 1, 1),
+            Tile(TileType.BLACK, 1, 1),
+        ])]
+
+    def test_joker_hard(self):
+        player = Player(0, [])
+        
+        tiles = [
+            Tile(TileType.BLUE, 1, 1),
+            Tile(TileType.BLUE, 1, 2),
+            Tile(TileType.BLUE, 1, 4),
+            Tile(TileType.JOKER, 1, -1),
+            Tile(TileType.RED, 1, 3),
+            Tile(TileType.BLACK, 1, 3),
+        ]
+        required_tiles = []
+
+        chosen_tile_groups = player.search_groups(tiles, required_tiles)
+        assert len(chosen_tile_groups) == 1
+        assert TileGroup([
+            Tile(TileType.BLUE, 1, 1),
+            Tile(TileType.BLUE, 1, 2),
+            Tile(TileType.BLUE, 1, 3),
+            Tile(TileType.BLUE, 1, 4),
+            Tile(TileType.JOKER, 1, -1),
+        ]) in chosen_tile_groups

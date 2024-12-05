@@ -39,7 +39,7 @@ class Tile:
 
 
 class TileGroup:
-    def __init__(self, tiles: List[Tile]):
+    def __init__(self, tiles: List[Tile]=[]):
         self.tiles = tiles
 
     def is_valid(self) -> bool:
@@ -76,6 +76,14 @@ class TileGroup:
                 return len(numbers) <= 11
             
         return False
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TileGroup):
+            return False
+        for tile in self.tiles:
+            if tile not in other.tiles:
+                return False
+        return True
     
     def __str__(self):
         return "[" + ", ".join(str(tile) for tile in self.tiles) + "]"
