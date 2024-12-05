@@ -5,7 +5,7 @@ from itertools import combinations
 from copy import deepcopy
 
 class Player:
-    def __init__(self, player_id: int, bank: List[Tile]):
+    def __init__(self, player_id: int, bank: Set[Tile]):
         self.player_id = player_id
         self.bank = bank
 
@@ -15,9 +15,38 @@ class Player:
     
     def generate_move(self, board_info: Tuple[int, List[TileGroup]]) -> List[TileGroup]:
         round_num, curr_board = board_info
-        return curr_board
+        board_tiles = []
+        for tile_group in curr_board:
+            board_tiles.extend(tile_group.tiles)
+
+        if not self.escaped_init:
+            bank_tile_groups = self.search_groups(self.bank, [], optimize_for="sum")
+            print()
+            for tile_group in bank_tile_groups:
+                print("Found group:", tile_group)
+            print(self.best_value)
+            if self.best_value < 30:
+                return curr_board
+            
+            print("Found something more than 30")
+            tiles_used = []
+            for tile_group in bank_tile_groups:
+                tiles_used.extend(tile_group.tiles)
+            self.remove_tiles_from_bank(tiles_used)
+            self.escaped_init = True
+            return curr_board + bank_tile_groups
+
+        return self.search_groups(
+            tiles=self.bank + board_tiles,
+            required_tiles=board_tiles,
+            optimize_for="tiles"
+        )
     
-    def search_groups(self, tiles: List[Tile], required_tiles: List[Tile]) -> List[List[TileGroup]]:
+    def remove_tiles_from_bank(self, tiles: List[Tile]):
+        for tile in tiles:
+            self.bank.remove(tile)
+
+    def search_groups(self, tiles: List[Tile], required_tiles: List[Tile], optimize_for="tiles") -> List[List[TileGroup]]:
         """ Given a list of tiles, return a list of possibilities of groups """
         tile_group_map = self.find_groups(tiles)
 
@@ -25,12 +54,12 @@ class Player:
         for groups in tile_group_map.values():
             all_exiting_groups = all_exiting_groups | groups
         
-        self.best_num_tiles_used = 0
+        self.best_value = 0
         self.best_tile_groups = []
-        self.search_groups_helper(tile_group_map, [], all_exiting_groups, required_tiles)
+        self.search_groups_helper(tile_group_map, [], all_exiting_groups, required_tiles, optimize_for)
         return self.best_tile_groups
         
-    def search_groups_helper(self, tile_group_map: Dict[Tile, Set[int]], curr_group_list: List[TileGroup], existing_groups: Set[int], required_tiles: List[Tile]=[]):
+    def search_groups_helper(self, tile_group_map: Dict[Tile, Set[int]], curr_group_list: List[TileGroup], existing_groups: Set[int], required_tiles: List[Tile]=[], optimize_for: str="tiles"):
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
             num_tiles_used = sum(len(group.tiles) for group in curr_group_list)
@@ -38,9 +67,22 @@ class Player:
             for tile_group in curr_group_list:
                 for tile in tile_group.tiles:
                     all_tiles.add(tile)
-            if num_tiles_used > self.best_num_tiles_used and all(tile in all_tiles for tile in required_tiles):
-                self.best_num_tiles_used = num_tiles_used
-                self.best_tile_groups = deepcopy(curr_group_list)
+            
+            if all(tile in all_tiles for tile in required_tiles):
+                if optimize_for == "tiles":
+                    if num_tiles_used > self.best_value:
+                        self.best_value = num_tiles_used
+                        self.best_tile_groups = deepcopy(curr_group_list)
+                else:
+                    assert optimize_for == "sum"
+                    # TODO: This is a bug: Jokers take the numerical value of the tile they replace.
+                    # For now, I'm going to ignore it.
+                    # TODO: Probably want to add a heuristic here about what tiles you prefer adding
+                    # if you've already hit 30. Currently just want to optimize for the highest sum.
+                    tile_sum = sum(tile.number for tile in all_tiles)
+                    if self.best_value < tile_sum:
+                        self.best_value = tile_sum
+                        self.best_tile_groups = deepcopy(curr_group_list)
             return []
         
         # Recursive case: Tiles have groups
@@ -57,15 +99,8 @@ class Player:
             assert new_group.is_valid()
 
             curr_group_list.append(new_group)
-            self.search_groups_helper(tile_group_map, curr_group_list, remaining_groups, required_tiles)
+            self.search_groups_helper(tile_group_map, curr_group_list, remaining_groups, required_tiles, optimize_for)
             curr_group_list.pop()
-
-        # Given N tiles
-        # Find all the potential tile groups in those N tiles
-        # For all the tiles that can only belong to one group -> insta play those
-        # For the rest of the tiles (that can belong in multiple groups)
-        # Go through every single possible combination of groups that you can make
-        # Return the one that uses the most tiles
 
 
     def find_groups(self, tiles: List[Tile]) -> Dict[Tile, Set[int]]:

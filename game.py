@@ -28,7 +28,7 @@ class RummikubGame:
 
     def deal_players(self) -> List[Player]:
         for player_id in range(self.num_players):
-            player_tiles = random.sample(self.all_tiles, 14)
+            player_tiles = set(random.sample(self.all_tiles, 14))
             for tile in player_tiles:
                 self.all_tiles.remove(tile)
             self.players.append(Player(player_id, player_tiles))
@@ -42,9 +42,8 @@ class RummikubGame:
             assert tile_group.is_valid(), f"Tile group {tile_group} is invalid!"
         
         new_tiles = []
-        for tile_group in new_tiles:
-            for tile in tile_group.tiles:
-                new_tiles.append(tile)
+        for tile_group in new_board:
+            new_tiles.extend(tile_group.tiles)
         
         old_tiles = []
         for tile_group in self.board:
@@ -55,9 +54,12 @@ class RummikubGame:
         # Player hasn't made a move, give them a new tile.
         if len(new_tiles) == len(old_tiles):
             assert len(self.all_tiles) > 0, "We've run out of tiles!"
+            print("Player didn't make a change to board, giving them a tile")
             tile = random.choice(self.all_tiles)
             self.all_tiles.remove(tile)
-            player.bank.append(tile)
+            player.bank.add(tile)
+        else:
+            self.board = new_board
     
     def get_board_info(self) -> Tuple[int, List[TileGroup]]:
         return self.num_turns // self.num_players, deepcopy(self.board)

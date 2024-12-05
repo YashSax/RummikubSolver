@@ -3,33 +3,48 @@ from player import Player
 
 from utils import *
 
-# example_game = RummikubGame(num_players=4)
-# players = example_game.deal_players()
+example_game = RummikubGame(num_players=2)
+players = example_game.deal_players()
 
-# while True:
-#     for player in players:
-#         new_board = player.generate_move(example_game.get_board_info())
-#         example_game.step(new_board, player)
+player_1 = players[0]
+player_2 = players[1]
 
-#         if player.is_game_over():
-#             print(f"Player {player.player_id} has won!")
+print("Player 1 Bank Before:")
+for tile in player_1.bank:
+    print(tile, end=" ")
 
-player = Player(0, [])
-        
-tiles = [
-    Tile(TileType.ORANGE, 1, 1),
-    Tile(TileType.ORANGE, 1, 2),
-    Tile(TileType.ORANGE, 1, 3),
-    Tile(TileType.ORANGE, 1, 4),
-    Tile(TileType.BLUE, 1, 3),
-    Tile(TileType.RED, 1, 3),
-    Tile(TileType.BLUE, 1, 1)
-]
-required_tiles = []
+board_info = example_game.get_board_info()
+player_move = player_1.generate_move(board_info)
+print("\n\nPlayer 1 Move:")
+for tile_group in player_move:
+    print(tile_group)
 
-chosen_tile_groups = player.search_groups(tiles, required_tiles)
+example_game.step(player_move, player_1)
 
-print(chosen_tile_groups)
+print("\nBoard state after:")
+for tile_group in example_game.get_board_info()[1]:
+    print(tile_group)
+
+
+print("Player 2 Bank Before:")
+for tile in player_2.bank:
+    print(tile, end=" ")
+
+board_info = example_game.get_board_info()
+player_move = player_2.generate_move(board_info)
+print("\n\nPlayer 2 Move:")
+for tile_group in player_move:
+    print(tile_group)
+
+example_game.step(player_move, player_1)
+
+print("\nBoard state after:")
+for tile_group in example_game.get_board_info()[1]:
+    print(tile_group)
+
+
+
+
 
 # for tile_group in chosen_tile_groups:
 #     print(tile_group)
