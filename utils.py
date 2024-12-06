@@ -83,6 +83,9 @@ class TileGroup:
         for tile in self.tiles:
             if tile not in other.tiles:
                 return False
+        for tile in other.tiles:
+            if tile not in self.tiles:
+                return False
         return True
     
     def __str__(self):

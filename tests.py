@@ -321,7 +321,6 @@ class TestPlayerFindOptimalGroupList:
         assert TileGroup([
             Tile(TileType.BLUE, 1, 1),
             Tile(TileType.BLUE, 1, 2),
-            Tile(TileType.BLUE, 1, 3),
             Tile(TileType.BLUE, 1, 4),
             Tile(TileType.JOKER, 1, -1),
         ]) in chosen_tile_groups

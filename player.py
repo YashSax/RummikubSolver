@@ -3,6 +3,8 @@ from utils import Tile, TileGroup, TileType, enum_to_color
 from collections import defaultdict
 from itertools import combinations
 from copy import deepcopy
+from tqdm import tqdm
+from functools import lru_cache 
 
 class Player:
     def __init__(self, player_id: int, bank: Set[Tile]):
@@ -15,29 +17,24 @@ class Player:
     
     def generate_move(self, board_info: Tuple[int, List[TileGroup]]) -> List[TileGroup]:
         round_num, curr_board = board_info
-        board_tiles = []
+        board_tiles = set()
         for tile_group in curr_board:
-            board_tiles.extend(tile_group.tiles)
+            for tile in tile_group.tiles:
+                board_tiles.add(tile)
 
         if not self.escaped_init:
             bank_tile_groups = self.search_groups(self.bank, [], optimize_for="sum")
-            print()
-            for tile_group in bank_tile_groups:
-                print("Found group:", tile_group)
-            print(self.best_value)
             if self.best_value < 30:
                 return curr_board
             
-            print("Found something more than 30")
             tiles_used = []
             for tile_group in bank_tile_groups:
                 tiles_used.extend(tile_group.tiles)
             self.remove_tiles_from_bank(tiles_used)
             self.escaped_init = True
             return curr_board + bank_tile_groups
-
         return self.search_groups(
-            tiles=self.bank + board_tiles,
+            tiles=self.bank | board_tiles,
             required_tiles=board_tiles,
             optimize_for="tiles"
         )
@@ -46,33 +43,63 @@ class Player:
         for tile in tiles:
             self.bank.remove(tile)
 
-    def search_groups(self, tiles: List[Tile], required_tiles: List[Tile], optimize_for="tiles") -> List[List[TileGroup]]:
+    def search_groups(self, tiles: Set[Tile], required_tiles: Set[Tile], optimize_for="tiles") -> List[TileGroup]:
         """ Given a list of tiles, return a list of possibilities of groups """
-        tile_group_map = self.find_groups(tiles)
+        self.tile_group_map = self.find_groups(tiles)
+        for tile, potential_groups in self.tile_group_map.items():
+            print(tile, end=" ")
+            print(potential_groups)
+        
+        self.required_tiles = required_tiles
 
-        all_exiting_groups = set()
-        for groups in tile_group_map.values():
-            all_exiting_groups = all_exiting_groups | groups
+        all_existing_groups = set()
+        for groups in self.tile_group_map.values():
+            all_existing_groups = all_existing_groups | groups
         
         self.best_value = 0
-        self.best_tile_groups = []
-        self.search_groups_helper(tile_group_map, [], all_exiting_groups, required_tiles, optimize_for)
-        return self.best_tile_groups
+        self.best_groups = []
+        self.cache = dict()
+        self.search_groups_helper(set(), all_existing_groups, optimize_for, False)
+
+        best_tile_groups = []
+        for group_num in self.best_groups:
+            tiles_in_group = []
+            for tile, potential_groups in self.tile_group_map.items():
+                if group_num in potential_groups:
+                    tiles_in_group.append(tile)
+            best_tile_groups.append(TileGroup(tiles_in_group))
+
+        return best_tile_groups
+    
+    def search_groups_helper(self, used_groups: Set[int], existing_groups: Set[int], optimize_for: str="tiles", show_progress=False):
+        # cache_key = tuple(sorted(list(existing_groups)))
+        # print(cache_key)
+        # if len(cache_key) > 0 and cache_key in self.cache:
+        #     print("Breaking early")
+            
+        #     print("Retrieved group list:")
+        #     for group in self.cache[cache_key]:
+        #         print(group)
+            
+        #     return
         
-    def search_groups_helper(self, tile_group_map: Dict[Tile, Set[int]], curr_group_list: List[TileGroup], existing_groups: Set[int], required_tiles: List[Tile]=[], optimize_for: str="tiles"):
+        # self.cache[cache_key] = deepcopy(curr_group_list)
+
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
-            num_tiles_used = sum(len(group.tiles) for group in curr_group_list)
             all_tiles = set()
-            for tile_group in curr_group_list:
-                for tile in tile_group.tiles:
-                    all_tiles.add(tile)
+            for group in used_groups:
+                for tile, potential_groups in self.tile_group_map.items():
+                    if group in potential_groups:
+                        all_tiles.add(tile)
             
-            if all(tile in all_tiles for tile in required_tiles):
+            num_tiles_used = len(all_tiles)
+            if all(tile in all_tiles for tile in self.required_tiles):
                 if optimize_for == "tiles":
                     if num_tiles_used > self.best_value:
+                        print("Using groups:", used_groups, "tiles:", num_tiles_used)
                         self.best_value = num_tiles_used
-                        self.best_tile_groups = deepcopy(curr_group_list)
+                        self.best_groups = deepcopy(used_groups)
                 else:
                     assert optimize_for == "sum"
                     # TODO: This is a bug: Jokers take the numerical value of the tile they replace.
@@ -82,25 +109,22 @@ class Player:
                     tile_sum = sum(tile.number for tile in all_tiles)
                     if self.best_value < tile_sum:
                         self.best_value = tile_sum
-                        self.best_tile_groups = deepcopy(curr_group_list)
+                        self.best_groups = deepcopy(used_groups)
             return []
         
         # Recursive case: Tiles have groups
-        for group in existing_groups:
+        group_iterable = tqdm(existing_groups) if show_progress else existing_groups
+        for group in group_iterable:
             remaining_groups = existing_groups - {group}
-            
-            # For each tile that is in the chosen group, remove all groups that tile is in
-            tiles_in_new_group = []
-            for tile, group_list in tile_group_map.items():
-                if group in group_list:
-                    remaining_groups -= group_list
-                    tiles_in_new_group.append(tile)
-            new_group = TileGroup(tiles_in_new_group)
-            assert new_group.is_valid()
 
-            curr_group_list.append(new_group)
-            self.search_groups_helper(tile_group_map, curr_group_list, remaining_groups, required_tiles, optimize_for)
-            curr_group_list.pop()
+            for tile, potential_groups in self.tile_group_map.items():
+                if group not in potential_groups:
+                    continue
+                remaining_groups -= potential_groups
+            
+            used_groups.add(group)
+            self.search_groups_helper(used_groups, remaining_groups, optimize_for)
+            used_groups.remove(group)
 
 
     def find_groups(self, tiles: List[Tile]) -> Dict[Tile, Set[int]]:
