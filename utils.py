@@ -27,7 +27,7 @@ class Tile:
     def __str__(self):
         if self.tile_type == TileType.JOKER:
             return "JOKER"
-        return f"{enum_to_color[self.tile_type]}_{self.tile_id}_{self.number}"
+        return f"{enum_to_color[self.tile_type]}_{self.number}"
     
     def __eq__(self, other):
         if not isinstance(other, Tile):

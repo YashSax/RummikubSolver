@@ -67,7 +67,7 @@ class Player:
         
         self.best_value = len(self.required_tiles)
         self.best_groups = []
-        self.cache = dict()
+        self.cache = set()
         self.search_groups_helper(set(), all_existing_groups, optimize_for, True)
 
         if self.best_value == len(self.required_tiles):
@@ -85,10 +85,17 @@ class Player:
     
     def search_groups_helper(self, used_groups: Set[int], existing_groups: Set[int], optimize_for: str="tiles", show_progress=False):
         # Optimization: cache used_groups to know if you've already been here.
-        cache_key = tuple(sorted(list(used_groups)))
+        used_tiles = []
+        for group in used_groups:
+            for tile, potential_groups in self.tile_group_map.items():
+                if group in potential_groups:
+                    used_tiles.append(tile)
+        used_tiles.sort(key=lambda tile: 2**tile.tile_type.value * 3**tile.tile_id * 5**(tile.number + 2))
+
+        cache_key = tuple(used_tiles)
         if cache_key in self.cache:
-            return        
-        self.cache[cache_key] = deepcopy(used_groups)
+            return
+        self.cache.add(cache_key)
 
         # Optimization: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
         for tile in self.required_tiles:
