@@ -40,6 +40,9 @@ class Player:
             optimize_for="tiles"
         )
 
+        if new_board is None:
+            return curr_board
+
         for tile_group in new_board:
             for tile in tile_group.tiles:
                 if tile in self.bank:
@@ -62,11 +65,14 @@ class Player:
         for groups in self.tile_group_map.values():
             all_existing_groups = all_existing_groups | groups
         
-        self.best_value = 0
+        self.best_value = len(self.required_tiles)
         self.best_groups = []
         self.cache = dict()
         self.search_groups_helper(set(), all_existing_groups, optimize_for, True)
 
+        if self.best_value == len(self.required_tiles):
+            return None
+        
         best_tile_groups = []
         for group_num in self.best_groups:
             tiles_in_group = []
@@ -93,6 +99,17 @@ class Player:
             if not tile_has_group:
                 return
 
+        # Optimization: If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
+        all_groups = used_groups | existing_groups
+        max_number_of_tiles = 0
+        for tile, potential_groups in self.tile_group_map.items():
+            for group in potential_groups:
+                if group in all_groups:
+                    max_number_of_tiles += 1
+                    break
+        if max_number_of_tiles <= self.best_value:
+            return
+
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
             all_tiles = set()
@@ -106,6 +123,7 @@ class Player:
                 if optimize_for == "tiles":
                     if num_tiles_used > self.best_value:
                         self.best_value = num_tiles_used
+                        print("Updated best value to", self.best_value)
                         self.best_groups = deepcopy(used_groups)
                 else:
                     assert optimize_for == "sum"
