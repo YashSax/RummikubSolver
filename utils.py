@@ -27,12 +27,12 @@ class Tile:
     def __str__(self):
         if self.tile_type == TileType.JOKER:
             return "JOKER"
-        return f"{enum_to_color[self.tile_type]}_{self.number}"
+        return f"{enum_to_color[self.tile_type]}_{self.tile_id}_{self.number}"
     
     def __eq__(self, other):
         if not isinstance(other, Tile):
             return False
-        return self.number == other.number and self.tile_type == other.tile_type
+        return self.number == other.number and self.tile_type == other.tile_type and self.tile_id == other.tile_id
     
     def __hash__(self):
         return hash((self.tile_type, self.tile_id, self.number))

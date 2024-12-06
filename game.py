@@ -31,11 +31,26 @@ class RummikubGame:
             player_tiles = set(random.sample(self.all_tiles, 14))
             for tile in player_tiles:
                 self.all_tiles.remove(tile)
+            
             self.players.append(Player(player_id, player_tiles))
+        
+        tiles = []
+        tiles.extend(self.all_tiles)
+        for player in self.players:
+            for tile in player.bank:
+                tiles.append(tile)
+        
+        assert len(tiles) == len(set(tiles))
+        
         return self.players
 
     def step(self, new_board: List[TileGroup], player: Player) -> None:
         self.num_turns += 1
+
+        tiles_in_new_board = []
+        for tile_group in new_board:
+            tiles_in_new_board.extend(tile_group.tiles)
+        assert len(tiles_in_new_board) == len(set(tiles_in_new_board)), f"Player {player.player_id} adding a double!"
 
         # Assume that the player has updated their own bank to remove the tiles they used.
         for tile_group in new_board:
@@ -62,7 +77,7 @@ class RummikubGame:
             self.board = new_board
     
     def get_board_info(self) -> Tuple[int, List[TileGroup]]:
-        return self.num_turns // self.num_players, deepcopy(self.board)
+        return self.num_turns, deepcopy(self.board)
 
 if __name__ == "__main__":
     game = RummikubGame(num_players=1)

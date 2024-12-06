@@ -33,11 +33,20 @@ class Player:
             self.remove_tiles_from_bank(tiles_used)
             self.escaped_init = True
             return curr_board + bank_tile_groups
-        return self.search_groups(
+
+        new_board = self.search_groups(
             tiles=self.bank | board_tiles,
             required_tiles=board_tiles,
             optimize_for="tiles"
         )
+
+        for tile_group in new_board:
+            for tile in tile_group.tiles:
+                if tile in self.bank:
+                    print("Used tile:", tile)
+                    self.bank.remove(tile)
+
+        return new_board
     
     def remove_tiles_from_bank(self, tiles: List[Tile]):
         for tile in tiles:
@@ -46,11 +55,8 @@ class Player:
     def search_groups(self, tiles: Set[Tile], required_tiles: Set[Tile], optimize_for="tiles") -> List[TileGroup]:
         """ Given a list of tiles, return a list of possibilities of groups """
         self.tile_group_map = self.find_groups(tiles)
-        for tile, potential_groups in self.tile_group_map.items():
-            print(tile, end=" ")
-            print(potential_groups)
-        
         self.required_tiles = required_tiles
+        print("Number of required tiles:", len(self.required_tiles))
 
         all_existing_groups = set()
         for groups in self.tile_group_map.values():
@@ -59,7 +65,7 @@ class Player:
         self.best_value = 0
         self.best_groups = []
         self.cache = dict()
-        self.search_groups_helper(set(), all_existing_groups, optimize_for, False)
+        self.search_groups_helper(set(), all_existing_groups, optimize_for, True)
 
         best_tile_groups = []
         for group_num in self.best_groups:
@@ -72,18 +78,20 @@ class Player:
         return best_tile_groups
     
     def search_groups_helper(self, used_groups: Set[int], existing_groups: Set[int], optimize_for: str="tiles", show_progress=False):
-        # cache_key = tuple(sorted(list(existing_groups)))
-        # print(cache_key)
-        # if len(cache_key) > 0 and cache_key in self.cache:
-        #     print("Breaking early")
-            
-        #     print("Retrieved group list:")
-        #     for group in self.cache[cache_key]:
-        #         print(group)
-            
-        #     return
-        
-        # self.cache[cache_key] = deepcopy(curr_group_list)
+        # Optimization: cache used_groups to know if you've already been here.
+        cache_key = tuple(sorted(list(used_groups)))
+        if cache_key in self.cache:
+            return        
+        self.cache[cache_key] = deepcopy(used_groups)
+
+        # Optimization: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
+        for tile in self.required_tiles:
+            tile_has_group = False
+            for potential_group in self.tile_group_map[tile]:
+                if potential_group in existing_groups or potential_group in used_groups:
+                    tile_has_group = True
+            if not tile_has_group:
+                return
 
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
@@ -97,7 +105,6 @@ class Player:
             if all(tile in all_tiles for tile in self.required_tiles):
                 if optimize_for == "tiles":
                     if num_tiles_used > self.best_value:
-                        print("Using groups:", used_groups, "tiles:", num_tiles_used)
                         self.best_value = num_tiles_used
                         self.best_groups = deepcopy(used_groups)
                 else:
