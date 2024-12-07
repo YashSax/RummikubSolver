@@ -74,8 +74,8 @@ class Player:
         self.start_time = time.time()
         self.search_groups_helper(set(), set(), all_existing_groups, optimize_for, True)
 
-        if self.best_value == len(self.required_tiles):
-            return None
+        # if self.best_value == len(self.required_tiles):
+        #     return None
         
         best_tile_groups = []
         for group_num in self.best_groups:
@@ -107,15 +107,16 @@ class Player:
             if not tile_has_group:
                 return
 
-        # Optimization: If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
-        max_number_of_tiles = len(used_tiles)
-        for tile, potential_groups in self.tile_group_map.items():
-            for group in potential_groups:
-                if group in existing_groups:
-                    max_number_of_tiles += 1
-                    break
-        if max_number_of_tiles <= self.best_value:
-            return
+        # Optimization (only when optimizing for tile count): If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
+        if optimize_for == "tiles":
+            max_number_of_tiles = len(used_tiles)
+            for tile, potential_groups in self.tile_group_map.items():
+                for group in potential_groups:
+                    if group in existing_groups:
+                        max_number_of_tiles += 1
+                        break
+            if max_number_of_tiles <= self.best_value:
+                return
 
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
@@ -133,10 +134,10 @@ class Player:
                     # TODO: Probably want to add a heuristic here about what tiles you prefer adding
                     # if you've already hit 30. Currently just want to optimize for the highest sum.
                     tile_sum = sum(tile.number for tile in used_tiles)
-                    if self.best_value < tile_sum:
+                    if tile_sum >= self.best_value:
                         self.best_value = tile_sum
                         self.best_groups = deepcopy(used_groups)
-            return []
+            return
         
         # Recursive case: Tiles have groups
         group_iterable = tqdm(existing_groups) if show_progress else existing_groups
@@ -152,7 +153,12 @@ class Player:
             
             used_tiles |= tiles_added
             used_groups.add(group)
-            self.search_groups_helper(used_tiles, used_groups, remaining_groups, optimize_for)
+            self.search_groups_helper(
+                used_tiles=used_tiles,
+                used_groups=used_groups,
+                existing_groups=remaining_groups,
+                optimize_for=optimize_for
+            )
             used_tiles -= tiles_added
             used_groups.remove(group)
 

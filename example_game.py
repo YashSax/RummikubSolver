@@ -40,30 +40,80 @@ from utils import *
         
 #         print("-" * 80)
 
+required_tiles = [
+    Tile(TileType.RED, 1, 6),
+    Tile(TileType.BLUE, 1, 11),
+    Tile(TileType.BLUE, 1, 13),
+    Tile(TileType.ORANGE, 1, 11),
+    Tile(TileType.BLACK, 1, 12),
+    Tile(TileType.ORANGE, 1, 2),
+    Tile(TileType.ORANGE, 1, 5),
+    Tile(TileType.ORANGE, 1, 6),
+    Tile(TileType.BLUE, 1, 5),
+    Tile(TileType.BLACK, 1, 7),
+    Tile(TileType.BLACK, 1, 9),
+    Tile(TileType.RED, 1, 3),
+    Tile(TileType.BLACK, 1, 10),
+    Tile(TileType.RED, 1, 5),
+    Tile(TileType.RED, 2, 5),
+    Tile(TileType.ORANGE, 1, 9),
+    Tile(TileType.BLUE, 1, 8),
+    Tile(TileType.RED, 1, 9),
+    Tile(TileType.RED, 1, 1),
+    Tile(TileType.RED, 1, 8),
+    Tile(TileType.RED, 1, 7),
+    Tile(TileType.RED, 1, 2),
+    Tile(TileType.RED, 1, 10),
+    Tile(TileType.RED, 2, 3),
+    Tile(TileType.RED, 1, 4),
+    Tile(TileType.BLACK, 1, 8),
+    Tile(TileType.BLACK, 2, 9),
+    Tile(TileType.BLACK, 2, 10),
+    Tile(TileType.BLACK, 1, 11),
+    Tile(TileType.BLACK, 1, 2),
+    Tile(TileType.BLUE, 1, 2),
+    Tile(TileType.RED, 2, 2),
+    Tile(TileType.BLUE, 1, 12),
+    Tile(TileType.ORANGE, 1, 12),
+    Tile(TileType.RED, 1, 12),
+    Tile(TileType.ORANGE, 1, 8),
+    Tile(TileType.BLUE, 1, 7),
+    Tile(TileType.ORANGE, 1, 7),
+    Tile(TileType.RED, 1, 11),
+    Tile(TileType.BLUE, 2, 5),
+    Tile(TileType.ORANGE, 2, 5),
+    Tile(TileType.BLUE, 2, 11),
+    Tile(TileType.BLUE, 1, 10),
+    Tile(TileType.ORANGE, 1, 10),
+    Tile(TileType.RED, 2, 10),
+    Tile(TileType.BLACK, 1, 4),
+    Tile(TileType.ORANGE, 1, 4),
+    Tile(TileType.RED, 2, 4),
+    Tile(TileType.RED, 2, 6),
+    Tile(TileType.BLUE, 1, 9),
+]
+
+player_bank = [
+    Tile(TileType.ORANGE, 2, 12),
+    Tile(TileType.BLUE, 1, 6),
+    Tile(TileType.RED, 2, 1),
+    Tile(TileType.BLACK, 1, 13),
+    Tile(TileType.BLACK, 1, 1),
+    Tile(TileType.BLUE, 2, 6),
+    Tile(TileType.ORANGE, 1, 13),
+    Tile(TileType.BLACK, 2, 13),
+]
+
+combined = player_bank + required_tiles
+assert len(combined) == len(set(combined))
+player_bank = set(player_bank)
+required_tiles = set(required_tiles)
 
 player = Player(0, [])
-        
-tiles = [
-    Tile(TileType.ORANGE, 1, 1),
-    Tile(TileType.ORANGE, 1, 2),
-    Tile(TileType.ORANGE, 1, 3),
-    Tile(TileType.ORANGE, 1, 4),
-    Tile(TileType.BLUE, 1, 3),
-    Tile(TileType.RED, 1, 3),
-    Tile(TileType.BLUE, 1, 1),
-]
-required_tiles = []
+optimal_groups = player.search_groups(required_tiles | player_bank, required_tiles)
 
-chosen_tile_groups = player.search_groups(tiles, required_tiles)
-print(chosen_tile_groups[0])
-assert chosen_tile_groups == [TileGroup([
-    Tile(TileType.ORANGE, 1, 1),
-    Tile(TileType.ORANGE, 1, 2),
-    Tile(TileType.ORANGE, 1, 3),
-    Tile(TileType.ORANGE, 1, 4),
-])]
-
-
+for tile_group in optimal_groups:
+    print(tile_group)
 
 # board = [
 #     Tile(TileType.BLUE, 1, 1), Tile(TileType.RED, 1, 1), Tile(TileType.ORANGE, 1, 1), Tile(TileType.BLACK, 1, 1),

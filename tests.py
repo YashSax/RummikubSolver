@@ -324,3 +324,40 @@ class TestPlayerFindOptimalGroupList:
             Tile(TileType.BLUE, 1, 4),
             Tile(TileType.JOKER, 1, -1),
         ]) in chosen_tile_groups
+    
+    def test_sum_optimization(self):
+        player = Player(0, [])
+
+        tiles = [
+            Tile(TileType.BLACK, 1, 10),
+            Tile(TileType.ORANGE, 1, 12),
+            Tile(TileType.BLUE, 1, 6),
+            Tile(TileType.ORANGE, 1, 9),
+            Tile(TileType.RED, 1, 9),
+            Tile(TileType.RED, 1, 1),
+            Tile(TileType.BLUE, 1, 8),
+            Tile(TileType.BLACK, 1, 13),
+            Tile(TileType.RED, 1, 10),
+            Tile(TileType.BLACK, 1, 1),
+            Tile(TileType.RED, 1, 5),
+            Tile(TileType.RED, 1, 7),
+            Tile(TileType.RED, 1, 5),
+            Tile(TileType.BLUE, 1, 6),
+            Tile(TileType.RED, 1, 8),
+            Tile(TileType.ORANGE, 1, 13),
+            Tile(TileType.BLACK, 2, 13),
+        ]
+        required_tiles = []
+
+        chosen_tile_groups = player.search_groups(tiles, required_tiles, optimize_for="sum")
+        assert len(chosen_tile_groups) == 1
+        assert TileGroup([
+            Tile(TileType.RED, 1, 7),
+            Tile(TileType.RED, 1, 8),
+            Tile(TileType.RED, 1, 9),
+            Tile(TileType.RED, 1, 10)
+        ]) in chosen_tile_groups
+
+
+
+
