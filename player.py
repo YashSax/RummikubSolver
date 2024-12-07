@@ -72,7 +72,7 @@ class Player:
         self.best_groups = []
         self.cache = set()
         self.start_time = time.time()
-        self.search_groups_helper(set(), all_existing_groups, optimize_for, True)
+        self.search_groups_helper(set(), set(), all_existing_groups, optimize_for, True)
 
         if self.best_value == len(self.required_tiles):
             return None
@@ -87,19 +87,12 @@ class Player:
 
         return best_tile_groups
     
-    def search_groups_helper(self, used_groups: Set[int], existing_groups: Set[int], optimize_for: str="tiles", show_progress=False):
+    def search_groups_helper(self, used_tiles: Set[Tile], used_groups: Set[int], existing_groups: Set[int], optimize_for: str="tiles", show_progress=False):
         if time.time() - self.start_time > self.turn_time_limit:
             return
         
         # Optimization: cache used_groups to know if you've already been here.
-        used_tiles = []
-        for group in used_groups:
-            for tile, potential_groups in self.tile_group_map.items():
-                if group in potential_groups:
-                    used_tiles.append(tile)
-        used_tiles.sort(key=lambda tile: 2**tile.tile_type.value * 3**tile.tile_id * 5**(tile.number + 2))
-
-        cache_key = tuple(used_tiles)
+        cache_key = tuple(sorted(used_tiles, key=lambda tile: 2**tile.tile_type.value * 3**tile.tile_id * 5**(tile.number + 2)))
         if cache_key in self.cache:
             return
         self.cache.add(cache_key)
@@ -115,11 +108,10 @@ class Player:
                 return
 
         # Optimization: If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
-        all_groups = used_groups | existing_groups
-        max_number_of_tiles = 0
+        max_number_of_tiles = len(used_tiles)
         for tile, potential_groups in self.tile_group_map.items():
             for group in potential_groups:
-                if group in all_groups:
+                if group in existing_groups:
                     max_number_of_tiles += 1
                     break
         if max_number_of_tiles <= self.best_value:
@@ -151,13 +143,17 @@ class Player:
         for group in group_iterable:
             remaining_groups = existing_groups - {group}
 
+            tiles_added = set()
             for tile, potential_groups in self.tile_group_map.items():
                 if group not in potential_groups:
                     continue
+                tiles_added.add(tile)
                 remaining_groups -= potential_groups
             
+            used_tiles |= tiles_added
             used_groups.add(group)
-            self.search_groups_helper(used_groups, remaining_groups, optimize_for)
+            self.search_groups_helper(used_tiles, used_groups, remaining_groups, optimize_for)
+            used_tiles -= tiles_added
             used_groups.remove(group)
 
 
