@@ -126,14 +126,8 @@ class Player:
 
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
-            all_tiles = set()
-            for group in used_groups:
-                for tile, potential_groups in self.tile_group_map.items():
-                    if group in potential_groups:
-                        all_tiles.add(tile)
-            
-            num_tiles_used = len(all_tiles)
-            if all(tile in all_tiles for tile in self.required_tiles):
+            num_tiles_used = len(used_tiles)
+            if all(tile in used_tiles for tile in self.required_tiles):
                 if optimize_for == "tiles":
                     if num_tiles_used > self.best_value:
                         self.best_value = num_tiles_used
@@ -145,7 +139,7 @@ class Player:
                     # For now, I'm going to ignore it.
                     # TODO: Probably want to add a heuristic here about what tiles you prefer adding
                     # if you've already hit 30. Currently just want to optimize for the highest sum.
-                    tile_sum = sum(tile.number for tile in all_tiles)
+                    tile_sum = sum(tile.number for tile in used_tiles)
                     if self.best_value < tile_sum:
                         self.best_value = tile_sum
                         self.best_groups = deepcopy(used_groups)
