@@ -110,6 +110,7 @@ class Player:
             for potential_group in self.tile_group_map[tile]:
                 if potential_group in existing_groups or potential_group in used_groups:
                     tile_has_group = True
+                    break
             if not tile_has_group:
                 return
 
