@@ -5,11 +5,14 @@ from itertools import combinations
 from copy import deepcopy
 from tqdm import tqdm
 from functools import lru_cache 
+import time
 
 class Player:
     def __init__(self, player_id: int, bank: Set[Tile]):
         self.player_id = player_id
         self.bank = bank
+
+        self.turn_time_limit = 180 # seconds
 
         # The tiles in the first move a player makes must be self-contained
         # and must have a sum greater than or equal to 30.
@@ -68,6 +71,7 @@ class Player:
         self.best_value = len(self.required_tiles)
         self.best_groups = []
         self.cache = set()
+        self.start_time = time.time()
         self.search_groups_helper(set(), all_existing_groups, optimize_for, True)
 
         if self.best_value == len(self.required_tiles):
@@ -84,6 +88,9 @@ class Player:
         return best_tile_groups
     
     def search_groups_helper(self, used_groups: Set[int], existing_groups: Set[int], optimize_for: str="tiles", show_progress=False):
+        if time.time() - self.start_time > self.turn_time_limit:
+            return
+        
         # Optimization: cache used_groups to know if you've already been here.
         used_tiles = []
         for group in used_groups:
