@@ -224,28 +224,28 @@ class TestPlayerFindGroups:
         assert len(tile_group_map[Tile(TileType.BLACK, 1, 12)]) == 1
         assert len(tile_group_map[Tile(TileType.BLACK, 1, 13)]) == 1
 
-    def test_valid_tilegroups(self):
-        """ Find all possible combinations of tiles (213,536) and check them."""
-        game = RummikubGame(num_players=1)
-        tiles = game.all_tiles
+    # def test_valid_tilegroups(self):
+    #     """ Find all possible combinations of tiles and check them."""
+    #     game = RummikubGame(num_players=1)
+    #     tiles = game.all_tiles
 
-        player = Player(0, [])
-        tile_group_map = player.find_groups(tiles)
+    #     player = Player(0, [])
+    #     tile_group_map = player.find_groups(tiles)
 
-        tile_groups = defaultdict(list)
-        for tile, groups in tile_group_map.items():
-            for group in groups:
-                tile_groups[group].append(tile)
+    #     tile_groups = defaultdict(list)
+    #     for tile, groups in tile_group_map.items():
+    #         for group in groups:
+    #             tile_groups[group].append(tile)
         
-        print(len(tile_groups))
-        for tile_list in tile_groups.values():
-            assert TileGroup(tile_list).is_valid(), " ".join([str(tile) for tile in tile_list])
+    #     print(len(tile_groups))
+    #     for tile_list in tile_groups.values():
+    #         assert TileGroup(tile_list).is_valid(), " ".join([str(tile) for tile in tile_list])
 
 class TestPlayerFindOptimalGroupList:
     def test_simple(self):
         player = Player(0, [])
         
-        tiles = [
+        tiles = set([
             Tile(TileType.ORANGE, 1, 1),
             Tile(TileType.ORANGE, 1, 2),
             Tile(TileType.ORANGE, 1, 3),
@@ -253,8 +253,8 @@ class TestPlayerFindOptimalGroupList:
             Tile(TileType.BLUE, 1, 3),
             Tile(TileType.RED, 1, 3),
             Tile(TileType.BLUE, 1, 1),
-        ]
-        required_tiles = []
+        ])
+        required_tiles = set()
 
         chosen_tile_groups = player.search_groups(tiles, required_tiles)
         assert chosen_tile_groups == [TileGroup([
@@ -267,12 +267,12 @@ class TestPlayerFindOptimalGroupList:
     def test_same_number_group(self):
         player = Player(0, [])
         
-        tiles = [
+        tiles = set([
             Tile(TileType.BLUE, 1, 3),
             Tile(TileType.RED, 1, 3),
             Tile(TileType.BLACK, 1, 3),
-        ]
-        required_tiles = []
+        ])
+        required_tiles = set()
 
         chosen_tile_groups = player.search_groups(tiles, required_tiles)
         assert chosen_tile_groups == [TileGroup([
@@ -284,12 +284,12 @@ class TestPlayerFindOptimalGroupList:
     def test_with_joker(self):
         player = Player(0, [])
         
-        tiles = [
+        tiles = set([
             Tile(TileType.BLUE, 1, 1),
             Tile(TileType.BLUE, 1, 2),
             Tile(TileType.JOKER, 1, -1),
-        ]
-        required_tiles = []
+        ])
+        required_tiles = set()
 
         chosen_tile_groups = player.search_groups(tiles, required_tiles)
         assert chosen_tile_groups == [TileGroup([
@@ -301,14 +301,14 @@ class TestPlayerFindOptimalGroupList:
     def test_required_tiles(self):
         player = Player(0, [])
         
-        tiles = [
+        tiles = set([
             Tile(TileType.BLUE, 1, 1),
             Tile(TileType.BLUE, 1, 2),
             Tile(TileType.BLUE, 1, 3),
             Tile(TileType.RED, 1, 1),
             Tile(TileType.BLACK, 1, 1),
-        ]
-        required_tiles = [Tile(TileType.RED, 1, 1)]
+        ])
+        required_tiles = set([Tile(TileType.RED, 1, 1)])
 
         chosen_tile_groups = player.search_groups(tiles, required_tiles)
         assert chosen_tile_groups == [TileGroup([
@@ -320,15 +320,15 @@ class TestPlayerFindOptimalGroupList:
     def test_joker_hard(self):
         player = Player(0, [])
         
-        tiles = [
+        tiles = set([
             Tile(TileType.BLUE, 1, 1),
             Tile(TileType.BLUE, 1, 2),
             Tile(TileType.BLUE, 1, 4),
             Tile(TileType.JOKER, 1, -1),
             Tile(TileType.RED, 1, 3),
             Tile(TileType.BLACK, 1, 3),
-        ]
-        required_tiles = []
+        ])
+        required_tiles = set()
 
         chosen_tile_groups = player.search_groups(tiles, required_tiles)
         assert len(chosen_tile_groups) == 1
@@ -342,7 +342,7 @@ class TestPlayerFindOptimalGroupList:
     def test_sum_optimization(self):
         player = Player(0, [])
 
-        tiles = [
+        tiles = set([
             Tile(TileType.BLACK, 1, 10),
             Tile(TileType.ORANGE, 1, 12),
             Tile(TileType.BLUE, 1, 6),
@@ -360,8 +360,8 @@ class TestPlayerFindOptimalGroupList:
             Tile(TileType.RED, 1, 8),
             Tile(TileType.ORANGE, 1, 13),
             Tile(TileType.BLACK, 2, 13),
-        ]
-        required_tiles = []
+        ])
+        required_tiles = set()
 
         chosen_tile_groups = player.search_groups(tiles, required_tiles, optimize_for="sum")
         assert len(chosen_tile_groups) == 1

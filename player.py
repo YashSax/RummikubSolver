@@ -73,7 +73,7 @@ class Player:
         self.cache = set()
         self.start_time = time.time()
         self.info = defaultdict(int)
-        self.search_groups_helper(set(), set(), all_existing_groups, optimize_for, True)
+        self.search_groups_helper(set(), set(), all_existing_groups, required_tiles, optimize_for, True)
 
         # if self.best_value == len(self.required_tiles):
         #     return None
@@ -88,7 +88,7 @@ class Player:
 
         return best_tile_groups
     
-    def search_groups_helper(self, used_tiles: Set[Tile], used_groups: Set[int], existing_groups: Set[int], optimize_for: str="tiles", show_progress=False):
+    def search_groups_helper(self, used_tiles: Set[Tile], used_groups: Set[int], existing_groups: Set[int], remaining_required: Set[int], optimize_for: str="tiles", show_progress=False):
         if time.time() - self.start_time > self.turn_time_limit:
             return
         
@@ -100,13 +100,9 @@ class Player:
         self.cache.add(cache_key)
 
         # # Optimization #2: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
-        for tile in self.required_tiles:
-            tile_has_group = False
-            for potential_group in self.tile_group_map[tile]:
-                if potential_group in existing_groups or potential_group in used_groups:
-                    tile_has_group = True
-                    break
-            if not tile_has_group:
+        for tile in remaining_required:
+            potential_groups = self.tile_group_map[tile]
+            if len(potential_groups.intersection(existing_groups)) == 0:
                 self.info["required tile no group"] += 1
                 return
 
@@ -149,11 +145,14 @@ class Player:
             remaining_groups = existing_groups - {group}
 
             tiles_added = set()
+            required_used = set()
             for tile, potential_groups in self.tile_group_map.items():
                 if group not in potential_groups:
                     continue
                 tiles_added.add(tile)
                 remaining_groups -= potential_groups
+                if tile in remaining_required:
+                    required_used.add(tile)
             
             used_tiles |= tiles_added
             used_groups.add(group)
@@ -161,6 +160,7 @@ class Player:
                 used_tiles=used_tiles,
                 used_groups=used_groups,
                 existing_groups=remaining_groups,
+                remaining_required=remaining_required - required_used,
                 optimize_for=optimize_for
             )
             used_tiles -= tiles_added
