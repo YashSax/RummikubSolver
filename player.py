@@ -12,7 +12,7 @@ class Player:
         self.player_id = player_id
         self.bank = bank
 
-        self.turn_time_limit = 180 # seconds
+        self.turn_time_limit = 1e99 # seconds
 
         # The tiles in the first move a player makes must be self-contained
         # and must have a sum greater than or equal to 30.
@@ -72,6 +72,7 @@ class Player:
         self.best_groups = []
         self.cache = set()
         self.start_time = time.time()
+        self.info = defaultdict(int)
         self.search_groups_helper(set(), set(), all_existing_groups, optimize_for, True)
 
         # if self.best_value == len(self.required_tiles):
@@ -91,13 +92,14 @@ class Player:
         if time.time() - self.start_time > self.turn_time_limit:
             return
         
-        # Optimization: cache used_groups to know if you've already been here.
-        cache_key = tuple(sorted(used_tiles, key=lambda tile: 2**tile.tile_type.value * 3**tile.tile_id * 5**(tile.number + 2)))
+        # Optimization # 1: cache used_groups to know if you've already been here.
+        cache_key = tuple(sorted(used_tiles, key=lambda tile: 2**tile.tile_type.value * 3**(tile.number + 2)))
         if cache_key in self.cache:
+            self.info["vanilla cache"] += 1
             return
         self.cache.add(cache_key)
 
-        # Optimization: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
+        # # Optimization #2: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
         for tile in self.required_tiles:
             tile_has_group = False
             for potential_group in self.tile_group_map[tile]:
@@ -105,9 +107,10 @@ class Player:
                     tile_has_group = True
                     break
             if not tile_has_group:
+                self.info["required tile no group"] += 1
                 return
 
-        # Optimization (only when optimizing for tile count): If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
+        # Optimization (only when optimizing for tile count) #3: If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
         if optimize_for == "tiles":
             max_number_of_tiles = len(used_tiles)
             for tile, potential_groups in self.tile_group_map.items():
@@ -116,12 +119,13 @@ class Player:
                         max_number_of_tiles += 1
                         break
             if max_number_of_tiles <= self.best_value:
+                self.info["best case is still bad"] += 1
                 return
 
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
             num_tiles_used = len(used_tiles)
-            if all(tile in used_tiles for tile in self.required_tiles):
+            if True: # Original: "all(tile in used_tiles for tile in self.required_tiles)" -> we don't need this since we have optimization #2
                 if optimize_for == "tiles":
                     if num_tiles_used > self.best_value:
                         self.best_value = num_tiles_used
@@ -196,7 +200,7 @@ class Player:
             
             # Can iterate over all possible sequence lengths
             for seq_len in range(3, 14):
-                for start_num in range(1, 14 - seq_len):
+                for start_num in range(1, 15 - seq_len):
                     # Determine if the sequence is possible
                     num_missing = sum(
                         number not in number_occs for number in

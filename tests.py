@@ -208,7 +208,21 @@ class TestPlayerFindGroups:
         assert len(tile_group_map[Tile(TileType.BLUE, 1, 2)]) == 1
         assert len(tile_group_map[Tile(TileType.BLUE, 1, 3)]) == 1
         assert len(tile_group_map[Tile(TileType.RED, 1, 1)]) == 1
-        assert len(tile_group_map[Tile(TileType.BLACK, 1, 1)]) == 1      
+        assert len(tile_group_map[Tile(TileType.BLACK, 1, 1)]) == 1
+
+    def test_ending_sequence(self):
+        player = Player(0, [])
+
+        tiles = [
+            Tile(TileType.BLACK, 1, 11),
+            Tile(TileType.BLACK, 1, 12),
+            Tile(TileType.BLACK, 1, 13),
+        ]
+
+        tile_group_map = player.find_groups(tiles)
+        assert len(tile_group_map[Tile(TileType.BLACK, 1, 11)]) == 1
+        assert len(tile_group_map[Tile(TileType.BLACK, 1, 12)]) == 1
+        assert len(tile_group_map[Tile(TileType.BLACK, 1, 13)]) == 1
 
     def test_valid_tilegroups(self):
         """ Find all possible combinations of tiles (213,536) and check them."""
