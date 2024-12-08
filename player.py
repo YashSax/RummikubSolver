@@ -93,7 +93,7 @@ class Player:
             return
         
         # Optimization # 1: cache used_groups to know if you've already been here.
-        cache_key = tuple(sorted(used_tiles, key=lambda tile: 2**tile.tile_type.value * 3**(tile.number + 2)))
+        cache_key = tuple(sorted(used_tiles, key=lambda tile: hash(tile)))
         if cache_key in self.cache:
             self.info["vanilla cache"] += 1
             return
