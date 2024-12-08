@@ -61,6 +61,16 @@ class Player:
     def search_groups(self, tiles: Set[Tile], required_tiles: Set[Tile], optimize_for="tiles") -> List[TileGroup]:
         """ Given a list of tiles, return a list of possibilities of groups """
         self.tile_group_map = self.find_groups(tiles)
+        self.group_tile_map = defaultdict(set)
+        for tile, potential_groups in self.tile_group_map.items():
+            for group in potential_groups:
+                self.group_tile_map[group].add(tile)
+
+        self.group_overlap = defaultdict(set)
+        for potential_groups in self.tile_group_map.values():
+            for group in potential_groups:
+                self.group_overlap[group] |= potential_groups
+
         self.required_tiles = required_tiles
         print("Number of required tiles:", len(self.required_tiles))
 
@@ -93,7 +103,7 @@ class Player:
             return
         
         # Optimization # 1: cache used_groups to know if you've already been here.
-        cache_key = tuple(sorted(used_tiles, key=lambda tile: hash(tile)))
+        cache_key = tuple(sorted(used_tiles, key=lambda tile: tile.hash_no_tile_id()))
         if cache_key in self.cache:
             self.info["vanilla cache"] += 1
             return
@@ -110,10 +120,7 @@ class Player:
         if optimize_for == "tiles":
             max_number_of_tiles = len(used_tiles)
             for tile, potential_groups in self.tile_group_map.items():
-                for group in potential_groups:
-                    if group in existing_groups:
-                        max_number_of_tiles += 1
-                        break
+                max_number_of_tiles += len(potential_groups.intersection(existing_groups)) > 0
             if max_number_of_tiles <= self.best_value:
                 self.info["best case is still bad"] += 1
                 return
@@ -142,17 +149,8 @@ class Player:
         # Recursive case: Tiles have groups
         group_iterable = tqdm(existing_groups) if show_progress else existing_groups
         for group in group_iterable:
-            remaining_groups = existing_groups - {group}
-
-            tiles_added = set()
-            required_used = set()
-            for tile, potential_groups in self.tile_group_map.items():
-                if group not in potential_groups:
-                    continue
-                tiles_added.add(tile)
-                remaining_groups -= potential_groups
-                if tile in remaining_required:
-                    required_used.add(tile)
+            remaining_groups = existing_groups - self.group_overlap[group]
+            tiles_added = self.group_tile_map[group]
             
             used_tiles |= tiles_added
             used_groups.add(group)
@@ -160,7 +158,7 @@ class Player:
                 used_tiles=used_tiles,
                 used_groups=used_groups,
                 existing_groups=remaining_groups,
-                remaining_required=remaining_required - required_used,
+                remaining_required=remaining_required - tiles_added,
                 optimize_for=optimize_for
             )
             used_tiles -= tiles_added

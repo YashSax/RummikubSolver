@@ -37,6 +37,9 @@ class Tile:
     def __hash__(self):
         return hash((self.tile_type, self.tile_id, self.number))
 
+    def hash_no_tile_id(self):
+        return hash((self.tile_type, self.number))
+
 
 class TileGroup:
     def __init__(self, tiles: List[Tile]=[]):
