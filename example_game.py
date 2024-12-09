@@ -102,6 +102,7 @@ find_duplicates(combined)
 assert len(combined) == len(set(combined))
 player_bank = set(player_bank)
 required_tiles = set(required_tiles)
+combined = set(combined)
 
 print("Total number of tiles:", len(combined))
 player = Player(0, [])

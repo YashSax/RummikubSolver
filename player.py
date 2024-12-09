@@ -81,9 +81,18 @@ class Player:
         self.best_value = len(self.required_tiles)
         self.best_groups = []
         self.cache = set()
+        self.remaining_tiles_cache = dict()
         self.start_time = time.time()
         self.info = defaultdict(int)
-        self.search_groups_helper(set(), set(), all_existing_groups, required_tiles, optimize_for, True)
+        self.search_groups_helper(
+            used_tiles=set(),
+            used_groups=set(),
+            existing_groups=all_existing_groups,
+            remaining_required=required_tiles,
+            remaining_tiles=tiles,
+            optimize_for=optimize_for,
+            show_progress=True
+        )
 
         # if self.best_value == len(self.required_tiles):
         #     return None
@@ -98,32 +107,45 @@ class Player:
 
         return best_tile_groups
     
-    def search_groups_helper(self, used_tiles: Set[Tile], used_groups: Set[int], existing_groups: Set[int], remaining_required: Set[int], optimize_for: str="tiles", show_progress=False):
+    def search_groups_helper(self, used_tiles: Set[Tile], used_groups: Set[int], existing_groups: Set[int], remaining_required: Set[int], remaining_tiles: Set[int], optimize_for: str="tiles", show_progress=False):
         if time.time() - self.start_time > self.turn_time_limit:
-            return
+            return -1e99, set()
         
         # Optimization # 1: cache used_groups to know if you've already been here.
         cache_key = tuple(sorted(used_tiles, key=lambda tile: tile.hash_no_tile_id()))
         if cache_key in self.cache:
             self.info["vanilla cache"] += 1
-            return
+            return -1e99, set()
         self.cache.add(cache_key)
 
-        # # Optimization #2: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
+        # Optimization #2: Cache over the remaining tiles.
+        remaining_tiles_cache_key = tuple(sorted(remaining_tiles, key=lambda tile: tile.hash_no_tile_id()))
+        if optimize_for == "tiles":
+            if remaining_tiles_cache_key in self.remaining_tiles_cache:
+                self.info["remaining tiles cache"] += 1
+
+                num_new_tiles, new_groups = self.remaining_tiles_cache[remaining_tiles_cache_key]
+                if len(used_tiles) + num_new_tiles > self.best_value:
+                    print("Updating best value to", len(used_tiles) + num_new_tiles)
+                    self.best_value = len(used_tiles) + num_new_tiles
+                    self.best_groups = used_groups | new_groups
+                return -1e99, set()
+
+        # Optimization #3: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
         for tile in remaining_required:
             potential_groups = self.tile_group_map[tile]
             if len(potential_groups.intersection(existing_groups)) == 0:
                 self.info["required tile no group"] += 1
-                return
+                return -1e99, set()
 
-        # Optimization (only when optimizing for tile count) #3: If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
+        # Optimization (only when optimizing for tile count) #4: If getting all the tiles in the remaining groups is not enough to beat the current best, leave early.
         if optimize_for == "tiles":
             max_number_of_tiles = len(used_tiles)
             for tile, potential_groups in self.tile_group_map.items():
                 max_number_of_tiles += len(potential_groups.intersection(existing_groups)) > 0
             if max_number_of_tiles <= self.best_value:
                 self.info["best case is still bad"] += 1
-                return
+                return -1e99, set()
 
         # Base case: no tile can be placed in any group
         if len(existing_groups) == 0:
@@ -144,9 +166,12 @@ class Player:
                     if tile_sum >= self.best_value:
                         self.best_value = tile_sum
                         self.best_groups = deepcopy(used_groups)
-            return
+            return num_tiles_used, deepcopy(used_groups)
         
         # Recursive case: Tiles have groups
+        best_num_new_tiles = -1
+        best_resulting_groups = set()
+
         group_iterable = tqdm(existing_groups) if show_progress else existing_groups
         for group in group_iterable:
             remaining_groups = existing_groups - self.group_overlap[group]
@@ -154,16 +179,26 @@ class Player:
             
             used_tiles |= tiles_added
             used_groups.add(group)
-            self.search_groups_helper(
+            num_tiles_used, resulting_groups = self.search_groups_helper(
                 used_tiles=used_tiles,
                 used_groups=used_groups,
                 existing_groups=remaining_groups,
                 remaining_required=remaining_required - tiles_added,
+                remaining_tiles=remaining_tiles - tiles_added,
                 optimize_for=optimize_for
             )
             used_tiles -= tiles_added
             used_groups.remove(group)
 
+            num_new_tiles = num_tiles_used - len(used_tiles)
+            new_groups = resulting_groups - used_groups
+            if num_new_tiles > best_num_new_tiles:
+                best_num_new_tiles = num_new_tiles
+                best_resulting_groups = new_groups
+        
+        self.remaining_tiles_cache[remaining_tiles_cache_key] = (best_num_new_tiles, best_resulting_groups)
+        return best_num_new_tiles, best_resulting_groups
+    
 
     def find_groups(self, tiles: List[Tile]) -> Dict[Tile, Set[int]]:
         """
