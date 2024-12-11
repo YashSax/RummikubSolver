@@ -129,6 +129,9 @@ class Player:
                     print("Updating best value to", len(used_tiles) + num_new_tiles)
                     self.best_value = len(used_tiles) + num_new_tiles
                     self.best_groups = used_groups | new_groups
+
+                    for group in self.best_groups:
+                        print("[" + ", ".join([str(i) for i in self.group_tile_map[group]]), "]")
                 return -1e99, set()
 
         # Optimization #3: For each required tile, there must be one group it can be in that's either already been chosen or can potentially be chosen.
@@ -156,6 +159,10 @@ class Player:
                         self.best_value = num_tiles_used
                         print("Updated best value to", self.best_value)
                         self.best_groups = deepcopy(used_groups)
+
+                        for group in self.best_groups:
+                            print("[" + ", ".join([str(i) for i in self.group_tile_map[group]]), "]")
+
                 else:
                     assert optimize_for == "sum"
                     # TODO: This is a bug: Jokers take the numerical value of the tile they replace.
