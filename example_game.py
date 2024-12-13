@@ -106,13 +106,66 @@ combined = set(combined)
 
 print("Total number of tiles:", len(combined))
 player = Player(0, [])
+
+import time
+start_time = time.time()
 optimal_groups = player.search_groups(combined, required_tiles)
+print(f"Search took {time.time() - start_time:.3f} seconds")
 
 print(optimal_groups)
 for tile_group in optimal_groups:
     print(tile_group)
 
 print(player.info)
+
+
+# player = Player(0, [])
+
+# required_tiles = [
+#     Tile(TileType.RED, 1, 11),
+#     Tile(TileType.BLUE, 1, 11),
+#     Tile(TileType.ORANGE, 1, 11),
+
+#     Tile(TileType.BLACK, 1, 5),
+#     Tile(TileType.BLUE, 1, 5),
+#     Tile(TileType.RED, 1, 5),
+#     Tile(TileType.ORANGE, 1, 5),
+    
+#     Tile(TileType.ORANGE, 1, 10),
+#     Tile(TileType.ORANGE, 2, 11),
+#     Tile(TileType.ORANGE, 1, 12),
+    
+#     Tile(TileType.BLACK, 1, 8),
+#     Tile(TileType.BLACK, 1, 9),
+#     Tile(TileType.BLACK, 1, 10),
+#     Tile(TileType.BLACK, 1, 11),
+#     Tile(TileType.BLACK, 1, 12),
+#     Tile(TileType.BLACK, 1, 13),
+    
+#     Tile(TileType.BLUE, 1, 10),
+#     Tile(TileType.ORANGE, 2, 10),
+#     Tile(TileType.BLACK, 2, 10),
+#     Tile(TileType.RED, 1, 10),
+    
+#     Tile(TileType.BLACK, 1, 7),
+#     Tile(TileType.ORANGE, 1, 7),
+#     Tile(TileType.RED, 1, 7),
+    
+#     Tile(TileType.RED, 1, 13),
+#     Tile(TileType.BLACK, 2, 13),
+#     Tile(TileType.BLUE, 1, 13),
+    
+#     Tile(TileType.BLUE, 1, 3),
+#     Tile(TileType.JOKER, 1),
+#     Tile(TileType.BLUE, 2, 5),
+# ]
+
+# assert len(set(required_tiles)) == len(required_tiles)
+
+# chosen_tile_groups = player.search_groups(set(required_tiles), set())
+# assert sum(len(tile_group.tiles) for tile_group in chosen_tile_groups) == len(required_tiles)
+
+
 
 # board = [
 #     Tile(TileType.BLUE, 1, 1), Tile(TileType.RED, 1, 1), Tile(TileType.ORANGE, 1, 1), Tile(TileType.BLACK, 1, 1),

@@ -84,18 +84,16 @@ class Player:
         self.remaining_tiles_cache = dict()
         self.start_time = time.time()
         self.info = defaultdict(int)
-        self.search_groups_helper(
+        self.search_groups_no_recursion(
+        # self.search_groups_helper(
             used_tiles=set(),
             used_groups=set(),
             existing_groups=all_existing_groups,
             remaining_required=required_tiles,
             remaining_tiles=tiles,
             optimize_for=optimize_for,
-            show_progress=True
+            # show_progress=True
         )
-
-        # if self.best_value == len(self.required_tiles):
-        #     return None
         
         best_tile_groups = []
         for group_num in self.best_groups:
@@ -107,6 +105,105 @@ class Player:
 
         return best_tile_groups
     
+    def search_groups_no_recursion(self, used_tiles: Set[Tile], used_groups: Set[int], existing_groups: Set[int], remaining_required: Set[int], remaining_tiles: Set[int], optimize_for: str="tiles"):
+        state_stack = [
+            (used_tiles, used_groups, existing_groups, remaining_required, remaining_tiles, optimize_for)
+        ]
+
+        while len(state_stack) > 0:
+            used_tiles, used_groups, existing_groups, remaining_required, remaining_tiles, optimize_for = state_stack.pop()
+            if time.time() - self.start_time > self.turn_time_limit:
+                return
+            
+            if self.used_tiles_in_cache(used_tiles):
+                continue
+
+            if self.required_tile_has_no_group(remaining_required, existing_groups):
+                continue
+
+            if optimize_for == "tiles" and self.remaining_tiles_not_enough(used_tiles, existing_groups):
+                continue
+
+            if len(existing_groups) == 0:
+                num_tiles_used = len(used_tiles)
+                if True: # Original: "all(tile in used_tiles for tile in self.required_tiles)" -> we don't need this since we have optimization #2
+                    if optimize_for == "tiles":
+                        if num_tiles_used > self.best_value:
+                            self.best_value = num_tiles_used
+                            print("Updated best value to", self.best_value)
+                            self.best_groups = deepcopy(used_groups)
+
+                            # for group in self.best_groups:
+                            #     print("[" + ", ".join([str(i) for i in self.group_tile_map[group]]), "]")
+
+                    else:
+                        assert optimize_for == "sum"
+                        # TODO: This is a bug: Jokers take the numerical value of the tile they replace.
+                        # For now, I'm going to ignore it.
+                        # TODO: Probably want to add a heuristic here about what tiles you prefer adding
+                        # if you've already hit 30. Currently just want to optimize for the highest sum.
+                        tile_sum = sum(tile.number for tile in used_tiles)
+                        if tile_sum >= self.best_value:
+                            self.best_value = tile_sum
+                            self.best_groups = deepcopy(used_groups)
+                continue
+
+            for group in existing_groups:
+                remaining_groups = existing_groups - self.group_overlap[group]
+                tiles_added = self.group_tile_map[group]
+                
+                state_stack.append((
+                    used_tiles | tiles_added,
+                    used_groups.union({group}),
+                    remaining_groups,
+                    remaining_required - tiles_added,
+                    remaining_tiles - tiles_added,
+                    optimize_for
+                ))
+
+
+    def used_tiles_in_cache(self, used_tiles):
+        cache_key = tuple(sorted(used_tiles, key=lambda tile: tile.hash_no_tile_id()))
+        if cache_key in self.cache:
+            self.info["vanilla cache"] += 1
+            return True
+        self.cache.add(cache_key)
+        return False
+    
+    def remaining_tiles_in_cache(self, used_tiles, used_groups, remaining_tiles):
+        remaining_tiles_cache_key = tuple(sorted(remaining_tiles, key=lambda tile: tile.hash_no_tile_id()))
+        if remaining_tiles_cache_key in self.remaining_tiles_cache:
+            self.info["remaining tiles cache"] += 1
+
+            num_new_tiles, new_groups = self.remaining_tiles_cache[remaining_tiles_cache_key]
+            if len(used_tiles) + num_new_tiles > self.best_value:
+                print("Updating best value to", len(used_tiles) + num_new_tiles)
+                self.best_value = len(used_tiles) + num_new_tiles
+                self.best_groups = used_groups | new_groups
+
+                # for group in self.best_groups:
+                #     print("[" + ", ".join([str(i) for i in self.group_tile_map[group]]), "]")
+            return True
+        return False
+
+    def required_tile_has_no_group(self, remaining_required, existing_groups):
+        for tile in remaining_required:
+            potential_groups = self.tile_group_map[tile]
+            if len(potential_groups.intersection(existing_groups)) == 0:
+                self.info["required tile no group"] += 1
+                return True
+        return False
+    
+    def remaining_tiles_not_enough(self, used_tiles, existing_groups):
+        max_number_of_tiles = len(used_tiles)
+        for tile, potential_groups in self.tile_group_map.items():
+            max_number_of_tiles += len(potential_groups.intersection(existing_groups)) > 0
+        if max_number_of_tiles <= self.best_value:
+            self.info["best case is still bad"] += 1
+            return True
+        return False
+
+
     def search_groups_helper(self, used_tiles: Set[Tile], used_groups: Set[int], existing_groups: Set[int], remaining_required: Set[int], remaining_tiles: Set[int], optimize_for: str="tiles", show_progress=False):
         if time.time() - self.start_time > self.turn_time_limit:
             return -1e99, set()
@@ -301,3 +398,7 @@ class Player:
     
     def is_game_over(self):
         return len(self.bank) == 0
+
+
+if __name__ == "__main__":
+    pass
